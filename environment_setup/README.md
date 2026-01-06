@@ -9,14 +9,17 @@ source $HOME/.local/bin/env
 source $HOME/.local/bin/env.fish 
 #### 毎回自動でパスを有効化(bash / zsh)
 export PATH="$HOME/.local/bin:$PATH
+
 source ~/.bashrc
 
 ### 新しいプロジェクトの作成
 uv init test
+
 cd test
 
 ### Python3.13をinstall
 uv python install 3.13
+
 uv python pin 3.13
 
 ### 必要なライブラリのインストール
@@ -24,9 +27,10 @@ uv add openai==1.108.1 tiktoken==0.11.0 python-dotenv==1.1.1 requests==2.32.5
 
 ### APIキーの設定
 取得したAPIキーを .env ファイルに書き込む
+
 その後、pythonプログラムを作成し、APIキーが読み込めているかを確認する
 
-"""configure_apyKey.py
+"""python
 import os
 from dotenv import load_dotenv
 
@@ -89,4 +93,44 @@ if __name__ == "__main__":
 
 """bash
 uv run openai_api_test.py
+"""
+
+## stream出力を試してみる
+
+"""python
+import os
+from openai import OpenAI
+from dotenv import load_dotenv
+
+def main():
+    # .envファイル読み込み
+    load_dotenv()
+
+    # OpenAIクライアントを初期化
+    client = OpenAI(api_key = os.getenv("OPENAI_API_KEY"))
+
+    try:
+        #シンプルなテスト用プロンプト
+        response = client.chat.completions.create(
+            model = "gpt-5-nano",
+            messages=[
+                {"role": "user", "content":"プログラミングにおける、環境構築って英語でなんて言うの？"}
+            ],
+            stream=True,
+        )
+
+        print("API接続成功")
+        for chunk in response:
+            delta = chunk.choices[0].delta.content
+            if delta:
+                print(delta, end="", flush=True)
+
+        print()  # 最後に改行
+    
+    except Exception as e:
+        print(f"API接続エラー:{str(e)}")
+
+
+if __name__ == "__main__":
+    main()
 """
