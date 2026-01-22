@@ -1,36 +1,50 @@
 ## 環境構築
 ### uvのインストール
+```bash
 curl -LsSf https://astral.sh/uv/install.sh|sh
-
+```
 ### uvのパスを通す
 #### bash / zshの場合
+```bash
 source $HOME/.local/bin/env 
+```
 #### fish の場合
+```bash
 source $HOME/.local/bin/env.fish 
+```
 #### 毎回自動でパスを有効化(bash / zsh)
+```bash
 export PATH="$HOME/.local/bin:$PATH
 
 source ~/.bashrc
+```
 
 ### 新しいプロジェクトの作成
+```bash
 uv init test
 
 cd test
+```
 
 ### Python3.13をinstall
+```bash
 uv python install 3.13
 
 uv python pin 3.13
+```
 
 ### 必要なライブラリのインストール
+```bash
 uv add openai==1.108.1 tiktoken==0.11.0 python-dotenv==1.1.1 requests==2.32.5
+```
+
 
 ### APIキーの設定
 取得したAPIキーを .env ファイルに書き込む
 
 その後、pythonプログラムを作成し、APIキーが読み込めているかを確認する
 
-"""python
+```python
 import os
 from dotenv import load_dotenv
 
@@ -46,18 +60,19 @@ def main():
 
 if __name__ == "__main__":
     main()
-"""
+```
 
 以下のコマンドでpythonファイルを実行できる
 
-"""bash
+```bash
  uv run configure_apyKey.py
- """
+```
+
 
 ## API通信を試してみる
 ### 簡単なチャットを試してみる
 
-"""python 
+```python 
 import os
 from openai import OpenAI
 from dotenv import load_dotenv
@@ -87,17 +102,17 @@ def main():
 
 if __name__ == "__main__":
     main()
-"""
+```
 
 以下で実行する
 
-"""bash
+```bash
 uv run openai_api_test.py
-"""
+```
 
 ## stream出力を試してみる
 
-"""python
+```python
 import os
 from openai import OpenAI
 from dotenv import load_dotenv
@@ -133,4 +148,5 @@ def main():
 
 if __name__ == "__main__":
     main()
-"""
+```
+
