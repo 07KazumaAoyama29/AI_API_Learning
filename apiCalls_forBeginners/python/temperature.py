@@ -14,13 +14,11 @@ def generate_text(prompt):
     
     try:
         stream = client.responses.create(
-        model="gpt-5-nano",
+        model="gpt-4.1-nano",
         input=prompt,
         stream=True,
-        temperature = 0.1,
-
-        #推論を最小化
-        reasoning={"effort": "minimal"},  
+        temperature=0.1,
+        # reasoning={"effort": "minimal"},  # ← gpt-4.1-nanoでは外す
         )
 
         buf = []
