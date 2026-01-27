@@ -17,6 +17,7 @@ def generate_text(prompt):
         model="gpt-5-nano",
         input=prompt,
         stream=True,
+        temperature = 0.1,
 
         #推論を最小化
         reasoning={"effort": "minimal"},  

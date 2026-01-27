@@ -2,7 +2,7 @@ import os, sys, time
 from openai import OpenAI
 from dotenv import load_dotenv
 
-def generate_text(prompt):
+def chat_with_system_role(system_content, user_content):
     # .envファイル読み込み
     load_dotenv()
 
@@ -15,7 +15,8 @@ def generate_text(prompt):
     try:
         stream = client.responses.create(
         model="gpt-5-nano",
-        input=prompt,
+        input=user_content,
+        instructions=system_content,
         stream=True,
 
         #推論を最小化
@@ -50,8 +51,17 @@ def generate_text(prompt):
         return None
 
 def main():
+    user_content = "動物のゾウとはどのようなものですか？"
 
-    generate_text("格言を一つ教えてください。")
+    print("幼稚園児ver")
+    system_content = "あなたは幼稚園児です。"
+    chat_with_system_role(system_content, user_content)
+
+    print("-"*50)
+
+    print("専門家ver")
+    system_content = "あなたは生物研究の専門家です。"
+    chat_with_system_role(system_content, user_content)
 
 if __name__ == "__main__":
     main()
