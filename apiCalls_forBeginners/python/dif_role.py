@@ -2,7 +2,7 @@ import os, sys, time
 from openai import OpenAI
 from dotenv import load_dotenv
 
-def chat_with_system_role(system_content, user_content):
+def generate_text(prompt, system_content):
     # .envファイル読み込み
     load_dotenv()
     # OpenAIクライアントを初期化
@@ -11,7 +11,7 @@ def chat_with_system_role(system_content, user_content):
     try:
         stream = client.responses.create(
         model="gpt-5-nano",
-        input=user_content,
+        input=prompt,
         instructions=system_content,
         stream=True,
         reasoning={"effort": "minimal"},  #推論を最小化
@@ -42,17 +42,17 @@ def chat_with_system_role(system_content, user_content):
         return None
 
 def main():
-    user_content = "動物のゾウとはどのようなものですか？"
+    prompt = "動物のゾウとはどのようなものですか？"
 
     print("幼稚園児ver")
     system_content = "あなたは幼稚園児です。"
-    chat_with_system_role(system_content, user_content)
+    generate_text(prompt, system_content)
 
     print("-"*50)
 
     print("専門家ver")
     system_content = "あなたは生物研究の専門家です。"
-    chat_with_system_role(system_content, user_content)
+    generate_text(prompt, system_content)
 
 if __name__ == "__main__":
     main()
