@@ -15,21 +15,15 @@ from dotenv import load_dotenv
 def generate_text(prompt):
     # .envファイル読み込み
     load_dotenv()
-
     # OpenAIクライアントを初期化
     client = OpenAI(api_key = os.getenv("OPENAI_API_KEY"))
-
-    t0 = time.perf_counter()
-    first_token_time = None
     
     try:
         stream = client.responses.create(
         model="gpt-5-nano",
         input=prompt,
         stream=True,
-
-        #推論を最小化
-        reasoning={"effort": "minimal"},  
+        reasoning={"effort": "minimal"},  #推論を最小化
         )
 
         buf = []
@@ -38,9 +32,6 @@ def generate_text(prompt):
 
         for event in stream:
             if event.type == "response.output_text.delta":
-                if first_token_time is None:
-                    first_token_time = time.perf_counter()
-                    print(f"TTFT: {(first_token_time - t0)*1000:.0f} ms\n---")
                 buf.append(event.delta)
 
                 now = time.perf_counter()
@@ -99,12 +90,8 @@ from dotenv import load_dotenv
 def chat_with_system_role(system_content, user_content):
     # .envファイル読み込み
     load_dotenv()
-
     # OpenAIクライアントを初期化
     client = OpenAI(api_key = os.getenv("OPENAI_API_KEY"))
-
-    t0 = time.perf_counter()
-    first_token_time = None
     
     try:
         stream = client.responses.create(
@@ -112,9 +99,7 @@ def chat_with_system_role(system_content, user_content):
         input=user_content,
         instructions=system_content,
         stream=True,
-
-        #推論を最小化
-        reasoning={"effort": "minimal"},  
+        reasoning={"effort": "minimal"},  #推論を最小化
         )
 
         buf = []
@@ -123,9 +108,6 @@ def chat_with_system_role(system_content, user_content):
 
         for event in stream:
             if event.type == "response.output_text.delta":
-                if first_token_time is None:
-                    first_token_time = time.perf_counter()
-                    print(f"TTFT: {(first_token_time - t0)*1000:.0f} ms\n---")
                 buf.append(event.delta)
 
                 now = time.perf_counter()
@@ -208,17 +190,18 @@ temperature / top_p / logprobs は GPT-5.2 で reasoning.effort: "none" のと�
 
 逆に、 **GPT-4.1-nanoなどのモデルでは、temperature の設定が可能。**
 
-なぜ新しいバージョン(GPT=5-nano)の方が temperature のような中核パラメータが使えないのかというと、
-GPT-5系（特に古い gpt-5 / mini / nano）が **推論を前提** にしていて、生成のしかたが“1回サンプルして終わり”じゃないから。
-
-GPT-5系は reasoning_mode というもので、 temperature が使えるのは sampling_mode というもの。
+なぜ新しいバージョン(GPT-5-nano)の方が temperature のような中核パラメータが使えないのかというと、
+GPT-5 系（特に古い gpt-5 / mini / nano）が **推論を前提** にしていて、生成のしかたが“1回サンプルして終わり”じゃないから。
 
 推論モードでは、内部で「考えるためのトークン」「道具呼び出し」「複数段の生成・整形」みたいなプロセスが絡むので、
 temperature をそのまま露出すると **品質が不安定** になったり、 **意図しない揺らぎ** が増えて“推論の強み”が崩れる、という設計判断になっているイメージ。
 
 実際、 temperature の代替として **reasoning.effort（考える量）、text.verbosity（冗長さ）、max_output_tokens（長さ）** を使ってね、という案内がある。
 
-上記のプログラムでは reasoning={"effort": "minimal"} と設定していたので、 temperature が低い設定でやっていたことになる。text.verbosity（冗長さ）、max_output_tokens（長さ）については後述する。
+つまり、推論モデルでは  temperature でブレを制御するのではなく、①考える量、②出力の長さ/冗長さ、③プロンプトで候補を複数出させる、で運用する
+
+上記のプログラムでは reasoning={"effort": "minimal"} と設定していたので、 temperature が低い設定のようなものでやっていたことになる。
+text.verbosity（冗長さ）、max_output_tokens（長さ）については後述する。
 
 temperatureを設定したい場合は、**gpt-5 / mini / nano以外のモデル**を使う必要がある。
 

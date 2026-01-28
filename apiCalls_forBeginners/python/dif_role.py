@@ -5,12 +5,8 @@ from dotenv import load_dotenv
 def chat_with_system_role(system_content, user_content):
     # .envファイル読み込み
     load_dotenv()
-
     # OpenAIクライアントを初期化
     client = OpenAI(api_key = os.getenv("OPENAI_API_KEY"))
-
-    t0 = time.perf_counter()
-    first_token_time = None
     
     try:
         stream = client.responses.create(
@@ -18,9 +14,7 @@ def chat_with_system_role(system_content, user_content):
         input=user_content,
         instructions=system_content,
         stream=True,
-
-        #推論を最小化
-        reasoning={"effort": "minimal"},  
+        reasoning={"effort": "minimal"},  #推論を最小化
         )
 
         buf = []
@@ -29,9 +23,6 @@ def chat_with_system_role(system_content, user_content):
 
         for event in stream:
             if event.type == "response.output_text.delta":
-                if first_token_time is None:
-                    first_token_time = time.perf_counter()
-                    print(f"TTFT: {(first_token_time - t0)*1000:.0f} ms\n---")
                 buf.append(event.delta)
 
                 now = time.perf_counter()
