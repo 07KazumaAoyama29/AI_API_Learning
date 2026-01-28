@@ -79,7 +79,7 @@ client = OpenAI(api_key = os.getenv("OPENAI_API_KEY"))
 try, exceptの例外処理を書くことで、**ネットワークエラーやレート制限などの問題**に**自動で**対処できるようになる。
 
 ## systemロールの比較実験
-systemロールに技術専門家と初心者向けアシスタントという異なる設定を与え、
+systemロールに幼稚園児と専門家という異なる設定を与え、
 **同じ質問に対する回答がどう変わるか**を比較する。
 
 ```python
@@ -214,7 +214,7 @@ stream = client.responses.create(
     input=prompt,
     stream=True,
     temperature=0.1,
-    # reasoning={"effort": "minimal"},  # ← gpt-4.1-nanoでは外す
+    #reasoning={"effort": "minimal"},  # ← gpt-4.1-nanoでは外す
 )
 ```
 
@@ -276,7 +276,6 @@ def generate_text(prompt, temperature=[0.1, 0.5, 1], run=3):
                 return None
 
 def main():
-
     generate_text("新しい航空会社のキャッチコピーを1つ考えて")
 
 if __name__ == "__main__":
@@ -301,7 +300,7 @@ stream = client.responses.create(
         input=prompt,
         stream=True,
         max_output_tokens=300,
-        # reasoning={"effort": "minimal"},  # ← gpt-4.1-nanoでは外す
+        reasoning={"effort": "minimal"},  # ← gpt-4.1-nanoでは外す
         )
 ```
 
@@ -326,7 +325,7 @@ stream = client.responses.create(
         input=prompt,
         stream=True,
         text={"verbosity": "low"},  # "low"|"medium"|"high"
-        # reasoning={"effort": "minimal"},  # ← gpt-4.1-nanoでは外す
+        reasoning={"effort": "minimal"},  # ← gpt-4.1-nanoでは外す
         )
 ```
 
