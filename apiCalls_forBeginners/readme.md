@@ -167,9 +167,9 @@ if __name__ == "__main__":
 
 ## 出力制御パラメータについて
 
-API には、 **AI の応答品質**を左右する、重要なパラメータが複数用意されている。
+API には、上記で紹介したmodel, input, instructions, stream 以外にも、 **AI の応答品質**を左右する、重要なパラメータが複数用意されている。
 
-プロンプトの工夫(プロンプトエンジニアリング)だけではなく、これらの**パラメータを調整**することで
+プロンプトの工夫(プロンプトエンジニアリング)だけではなく、これらの**パラメータを組み合わせ、調整**することで
 より**精度・品質の高い出力**を得られることができる。
 
 ### GPT-5-nanoで指定可能なパラメータ
@@ -199,16 +199,19 @@ AI の パラメータの中で、一番有名なのではないか。(**※完�
 
 OpenAIのモデルガイド(2026-01-27アクセス)では、
 
-temperature / top_p / logprobs は **GPT-5.2 で reasoning.effort: "none" のときだけ** サポート
-
-それ以外の reasoning effort（none以外）や、古い GPT-5 系（gpt-5, gpt-5-mini, gpt-5-nano）にこれらを含めると **エラー** になる
+```txt
+temperature / top_p / logprobs は GPT-5.2 で reasoning.effort: "none" のときだけサポート
+それ以外の reasoning effort（none以外）や、古い GPT-5 系（gpt-5, gpt-5-mini, gpt-5-nano）にこれらを含めるとエラーになる
+```
 
 と明記されている。
 
-逆に、 **GPT-4.1-nanoなどのモデルでは、temperature　の設定が可能。**
+逆に、 **GPT-4.1-nanoなどのモデルでは、temperature の設定が可能。**
 
 なぜ新しいバージョン(GPT=5-nano)の方が temperature のような中核パラメータが使えないのかというと、
 GPT-5系（特に古い gpt-5 / mini / nano）が **推論を前提** にしていて、生成のしかたが“1回サンプルして終わり”じゃないから。
+
+GPT-5系は reasoning_mode というもので、 temperature が使えるのは sampling_mode というもの。
 
 推論モードでは、内部で「考えるためのトークン」「道具呼び出し」「複数段の生成・整形」みたいなプロセスが絡むので、
 temperature をそのまま露出すると **品質が不安定** になったり、 **意図しない揺らぎ** が増えて“推論の強み”が崩れる、という設計判断になっているイメージ。
@@ -233,31 +236,119 @@ stream = client.responses.create(
 )
 ```
 
-
-
-
-
-
-
-
-
-### text
-
-「どれだけ詳しく書くか」(verbosity) や、JSON/構造化出力 の土台。温度の代替として “話し方” を制御できる。
-使い方（verbosity）
+temperature で AI の挙動がどのように変わるのかをテストしたい場合は、以下のプログラムを実行して試してみる。
 
 ```python
-text={"verbosity": "low"}  # "low"|"medium"|"high"
+import os, sys, time
+from openai import OpenAI
+from dotenv import load_dotenv
+
+def generate_text(prompt, temperature=[0.1, 0.5, 1], run=3):
+    # .envファイル読み込み
+    load_dotenv()
+
+    # OpenAIクライアントを初期化
+    client = OpenAI(api_key = os.getenv("OPENAI_API_KEY"))
+
+    t0 = time.perf_counter()
+    first_token_time = None
+    
+    for i in temperature:
+        print("-"*40)
+        print(f"temperature:{i}")
+        for j in range(run):
+            try:
+                stream = client.responses.create(
+                model="gpt-4.1-nano",
+                input=prompt,
+                stream=True,
+                temperature=i,
+                # reasoning={"effort": "minimal"},  # ← gpt-4.1-nanoでは外す
+                )
+
+                buf = []
+                last_flush = time.perf_counter()
+                FLUSH_INTERVAL = 0.03  # 30msごとにまとめて表示
+
+                for event in stream:
+                    if event.type == "response.output_text.delta":
+                        if first_token_time is None:
+                            first_token_time = time.perf_counter()
+                            print(f"TTFT: {(first_token_time - t0)*1000:.0f} ms\n---")
+                        buf.append(event.delta)
+
+                        now = time.perf_counter()
+                        if now - last_flush >= FLUSH_INTERVAL:
+                            sys.stdout.write("".join(buf))
+                            sys.stdout.flush()
+                            buf.clear()
+                            last_flush = now
+
+                    elif event.type == "response.output_text.done":
+                        if buf:
+                            sys.stdout.write("".join(buf))
+                            sys.stdout.flush()
+                        print()
+            except Exception as e:
+                print(f"API接続エラー:{str(e)}")
+                return None
+
+def main():
+
+    generate_text("新しい航空会社のキャッチコピーを1つ考えて")
+
+if __name__ == "__main__":
+    main()
+
 ```
 
-### max_output_tokens
+さらに、他のパラメータも調整することで、出力の質を変えることができる。
+
+以下では、私が有用だと考えるパラメータをいくつか紹介する。
+
+
+### max_output_tokens(出力トークンの最大値の制御)
 
 コスト・レイテンシ・暴走防止の最重要安全弁。可視出力だけでなく reasoning tokens も含めた上限。
-使い方
+
+既存のプログラムの stream の引数を以下に書き換えるだけ。
 
 ```python
-max_output_tokens=800
+stream = client.responses.create(
+        model="gpt-5-nano",
+        input=prompt,
+        stream=True,
+        max_output_tokens=300,
+        # reasoning={"effort": "minimal"},  # ← gpt-4.1-nanoでは外す
+        )
 ```
+
+max_output_tokens を下げすぎると、なにも出力されなくなるので注意。
+
+短い解答が欲しい場合、トークン消費を押さえたい場合などに使う。
+
+ここでは model, input, stream, max_output_tokens の4種類しかパラメータを指定していないが、
+これ以上のパラメータも指定することができる。
+
+### text(話し方や出力形式の制御)
+
+**どれだけ詳しく書くか**や、JSON / 構造化出力の土台。
+
+temperature の代替として “話し方” を制御できる。
+
+既存のプログラムの stream の引数を以下に書き換えるだけ。
+
+```python
+stream = client.responses.create(
+        model="gpt-5-nano",
+        input=prompt,
+        stream=True,
+        text={"verbosity": "low"},  # "low"|"medium"|"high"
+        # reasoning={"effort": "minimal"},  # ← gpt-4.1-nanoでは外す
+        )
+```
+
+verbosity を設定すると応答時間が長くなる傾向にあるので注意。
 
 ### tools
 
